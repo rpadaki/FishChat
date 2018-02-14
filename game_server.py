@@ -80,11 +80,12 @@ class Deck(object):
             self.cards.append(card)
 
 class Player(object):
-    def __init__(self, id, name=str(id)):
+    def __init__(self, id):
         self.hand = []
         self.id = id
         self.team = id % 2
-        self.name = name
+        self.name = str(id)
+        self.ip = ""
 
     def hand(self):
         return self.hand
@@ -98,8 +99,17 @@ class Player(object):
     def name(self):
         return self.name
 
+    def ip(self):
+        return self.ip
+
     def halfsuits(self):
         return set(card.halfsuit() for card in self.hand)
+
+    def set_name(self, name):
+        self.name = name
+
+    def set_ip(self, ip):
+        self.ip = ip
 
     def in_hand(self, card):
         for held_card in self.hard:
@@ -132,12 +142,13 @@ class Game(object):
             self.deck.cards().remove(card)
         self.deck.shuffle()
         
+        self.players = [Player(id) for id in range(6)]
+        self.players_by_ip = {}
         count = 0
         while len(self.deck):
             self.players[count % 6].give(self.deck.draw())
             count += 1
 
-        self.players = [Player(id, str(id)) for id in range(6)]
         self.active_player = players[0]
         self.declaring = False
         self.declaring_halfsuit = False
@@ -167,6 +178,9 @@ class Game(object):
     def halfsuits_in_play(self):
         return self.halfsuits_in_play
 
+    def players_by_ip(self):
+        return self.players_by_ip
+
     def query(self, id, card):
         if self.valid_query(self.players[id], card):
             card_in_hand = self.players[id].take(card)
@@ -192,9 +206,43 @@ class Game(object):
         return -1
 
     def end_declaration(self):
+        removed_cards = []
         if self.declaring:
             for player in self.players:
-                for card in player.
+                current_hand = [card for card in player.hand()]
+                for card in current_hand:
+                    if card in self.declaring_halfsuit:
+                        removed_cards += player.take_card(card)
+            return removed_cards
         return -1
 
-    def declare(self, halfsuit, declaration_dict):
+app = Flask(__name__)
+game = Game()
+
+@app.route('/join', methods=['POST'])
+def add_user():
+    remote_ip = request.environ['REMOTE_ADDR']
+    values = request.get_json()
+    if 'name' not in values:
+        return 'Missing values', 400
+
+    for player in game.players():
+        if player.ip == remote_ip:
+            return 'Duplicate player', 400
+        if not player.ip:
+            player.set_ip(remote_ip)
+            player.set_name(values['name'])
+            game.players_by_ip()[remote_ip] = player
+    response = {'message': 'Player ' + values['name'] + ' added to the game.'}
+    return jsonify(response), 201
+
+@app.route('/hand', methods=['GET'])
+def get_hand():
+    remote_ip = request.environ['REMOTE_ADDR']
+    response = {
+            'hand' : game.players_by_ip()[remote_ip].hand()
+    }
+    return jsonify(response), 200
+
+if __name__ == '__main__':
+    app.run(host='127.0.0.1', port=5000)
