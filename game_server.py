@@ -13,23 +13,11 @@ class Card(object):
         self.halfsuit = (self.suit, self.value < 8)
 
     def same_halfsuit_as(self, card):
-        return self.halfsuit = card.halfsuit
+        return self.halfsuit == card.halfsuit
 
     def equals(self, card):
         return self.value == card.value and self.suit == card.suit
 
-    def value(self):
-        return self.value
-
-    def suit(self):
-        return self.suit
-
-    def string(self):
-        return self.string
-
-    def halfsuit(self):
-        return self.halfsuit
-    
     @staticmethod
     def stringify(value, suit):
         out = ""
@@ -58,11 +46,8 @@ class Deck(object):
     def __init__(self):
         values = [i+1 for i in range(13)]
         suits = [0, 1, 2, 3]
-        self.cards = [Card(a,b) for a in self.values for b in self.suits]
+        self.cards = [Card(a,b) for a in values for b in suits]
 
-    def cards(self):
-        return self.cards
-    
     def shuffle(self):
         random.shuffle(self.cards)
 
@@ -87,32 +72,11 @@ class Player(object):
         self.name = str(id)
         self.ip = ""
 
-    def hand(self):
-        return self.hand
-
-    def id(self):
-        return self.id
-
-    def team(self):
-        return self.team
-
-    def name(self):
-        return self.name
-
-    def ip(self):
-        return self.ip
-
     def halfsuits(self):
-        return set(card.halfsuit() for card in self.hand)
-
-    def set_name(self, name):
-        self.name = name
-
-    def set_ip(self, ip):
-        self.ip = ip
+        return set(card.halfsuit for card in self.hand)
 
     def in_hand(self, card):
-        for held_card in self.hard:
+        for held_card in self.hand:
             if card.equals(held_card):
                 return held_card
         return False
@@ -132,54 +96,30 @@ class Player(object):
 
 
 class Game(object):
-    def __init__(self, id):
+    def __init__(self):
         self.deck = Deck()
         bad_cards = []
-        for card in self.deck.cards():
-            if card.value() == 8:
+        for card in self.deck.cards:
+            if card.value == 8:
                 bad_cards.append(card)
         for card in bad_cards:
-            self.deck.cards().remove(card)
+            self.deck.cards.remove(card)
         self.deck.shuffle()
         
         self.players = [Player(id) for id in range(6)]
         self.players_by_ip = {}
         count = 0
-        while len(self.deck):
-            self.players[count % 6].give(self.deck.draw())
+        while count < 48:
+            self.players[count % 6].give_card(self.deck.draw())
             count += 1
 
-        self.active_player = players[0]
+        self.active_player = self.players[0]
         self.declaring = False
         self.declaring_halfsuit = False
-        self.halfsuits_in_play = set(card.halfsuit() for card in self.deck)
-
-    def deck(self):
-        return self.deck
-
-    def players(self):
-        return self.players
-
-    def player(self, id):
-        return self.players[id]
-
-    def active_player(self):
-        return self.active_player
-
-    def declaring(self):
-        return self.declaring
-
-    def declaring_halfsuit(self):
-        return self.declaring_halfsuit
+        self.halfsuits_in_play = set(card.halfsuit for card in self.deck.cards)
 
     def valid_query(self, card):
-        return card.halfsuit() in self.active_player.halfsuits()
-
-    def halfsuits_in_play(self):
-        return self.halfsuits_in_play
-
-    def players_by_ip(self):
-        return self.players_by_ip
+        return card.halfsuit in self.active_player.halfsuits()
 
     def query(self, id, card):
         if self.valid_query(self.players[id], card):
@@ -193,7 +133,7 @@ class Game(object):
         return -1
 
     def declaration_query(self, id, card):
-        if self.declaring and self.declaring.id() % 2 == id % 2 and self.declaring_halfsuit == card.halfsuit():
+        if self.declaring and self.declaring.id % 2 == id % 2 and self.declaring_halfsuit == card.halfsuit:
                 return self.players[id].take_card(card)
         return -1
 
@@ -209,7 +149,7 @@ class Game(object):
         removed_cards = []
         if self.declaring:
             for player in self.players:
-                current_hand = [card for card in player.hand()]
+                current_hand = [card for card in player.hand]
                 for card in current_hand:
                     if card in self.declaring_halfsuit:
                         removed_cards += player.take_card(card)
@@ -226,21 +166,25 @@ def add_user():
     if 'name' not in values:
         return 'Missing values', 400
 
-    for player in game.players():
+    for player in game.players:
         if player.ip == remote_ip:
             return 'Duplicate player', 400
         if not player.ip:
-            player.set_ip(remote_ip)
-            player.set_name(values['name'])
-            game.players_by_ip()[remote_ip] = player
+            player.ip = remote_ip
+            player.name = values['name']
+            game.players_by_ip[remote_ip] = player
     response = {'message': 'Player ' + values['name'] + ' added to the game.'}
     return jsonify(response), 201
 
 @app.route('/hand', methods=['GET'])
 def get_hand():
     remote_ip = request.environ['REMOTE_ADDR']
+    player = game.players_by_ip[remote_ip]
+    hand = player.hand
     response = {
-            'hand' : game.players_by_ip()[remote_ip].hand()
+            'hand_suits' : [card.suit for card in hand],
+            'hand_values' : [card.value for card in hand],
+            'name' : player.name
     }
     return jsonify(response), 200
 
