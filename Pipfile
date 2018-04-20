@@ -6,10 +6,7 @@ verify_ssl = true
 
 [packages]
 
-django = "*"
-gunicorn = "*"
-django-heroku = "*"
-
+flask = "*"
 
 [requires]
 
