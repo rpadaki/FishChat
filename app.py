@@ -199,7 +199,7 @@ def get_hand():
     response = {
             'hand_suits' : [card.suit for card in hand],
             'hand_values' : [card.value for card in hand],
-            'name' : player.name
+            'name' : player.name,
             'player_id': remote_uuid
     }
     return jsonify(response), 201
