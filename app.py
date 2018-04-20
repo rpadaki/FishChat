@@ -169,6 +169,7 @@ def homepage():
 @app.route('/join', methods=['POST'])
 def add_user():
     remote_ip = request.environ['REMOTE_ADDR']
+    print("Join request by " + remote_ip)
     values = request.get_json()
     if 'name' not in values:
         return 'Missing values', 400
@@ -186,6 +187,7 @@ def add_user():
 @app.route('/hand', methods=['GET'])
 def get_hand():
     remote_ip = request.environ['REMOTE_ADDR']
+    print("Hand request by " + remote_ip)
     player = game.players_by_ip[remote_ip]
     hand = player.hand
     response = {
