@@ -159,6 +159,13 @@ class Game(object):
 app = Flask(__name__)
 game = Game()
 
+@app.route('/')
+def homepage():
+    return """
+    <h1>Hello!</h1>
+    <p>This is a test because Heroku is hot garbage.</p>
+    """
+
 @app.route('/join', methods=['POST'])
 def add_user():
     remote_ip = request.environ['REMOTE_ADDR']
