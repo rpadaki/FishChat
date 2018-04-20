@@ -70,7 +70,7 @@ class Player(object):
         self.id = id
         self.team = id % 2
         self.name = str(id)
-        self.ip = ""
+        self.uuid = ""
 
     def halfsuits(self):
         return set(card.halfsuit for card in self.hand)
@@ -107,7 +107,7 @@ class Game(object):
         self.deck.shuffle()
         
         self.players = [Player(id) for id in range(6)]
-        self.players_by_ip = {}
+        self.players_by_uuid = {}
         count = 0
         while count < 48:
             self.players[count % 6].give_card(self.deck.draw())
@@ -168,34 +168,41 @@ def homepage():
 
 @app.route('/join', methods=['POST'])
 def add_user():
-    remote_ip = request.environ['REMOTE_ADDR']
-    print("Join request by " + remote_ip)
+    remote_uuid = str(random.getrandbits(64))
+    print("Join request by " + remote_uuid)
     values = request.get_json()
     if 'name' not in values:
         return 'Missing values', 400
 
     for player in game.players:
-        if player.ip == remote_ip:
+        if player.uuid == remote_uuid:
             return 'Duplicate player', 400
-        if not player.ip:
-            player.ip = remote_ip
+        if not player.uuid:
+            player.uuid = remote_uuid
             player.name = values['name']
-            game.players_by_ip[remote_ip] = player
-    response = {'message': 'Player ' + values['name'] + ' added to the game.'}
+            game.players_by_uuid[remote_uuid] = player
+    response = {
+            'message': 'Player ' + values['name'] + ' added to the game.',
+            'player_id': remote_uuid
+    }
     return jsonify(response), 201
 
-@app.route('/hand', methods=['GET'])
+@app.route('/hand', methods=['POST'])
 def get_hand():
-    remote_ip = request.environ['REMOTE_ADDR']
-    print("Hand request by " + remote_ip)
-    player = game.players_by_ip[remote_ip]
+    values = request.get_json()
+    if 'player_id' not in values:
+        return 'Missing values', 400
+    remote_uuid = values['player_id']
+    print("Hand request by " + remote_uuid)
+    player = game.players_by_uuid[remote_uuid]
     hand = player.hand
     response = {
             'hand_suits' : [card.suit for card in hand],
             'hand_values' : [card.value for card in hand],
             'name' : player.name
+            'player_id': remote_uuid
     }
-    return jsonify(response), 200
+    return jsonify(response), 201
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
