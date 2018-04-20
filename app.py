@@ -194,6 +194,7 @@ def get_hand():
         return 'Missing values', 400
     remote_uuid = values['player_id']
     print("Hand request by " + remote_uuid)
+    print(key for key in game.players_by_uuid)
     player = game.players_by_uuid[remote_uuid]
     hand = player.hand
     response = {
