@@ -158,6 +158,7 @@ class Game(object):
 
 app = Flask(__name__)
 game = Game()
+game_id = str(random.getrandbits(64))
 
 @app.route('/')
 def homepage():
@@ -194,6 +195,7 @@ def get_hand():
         return 'Missing values', 400
     remote_uuid = values['player_id']
     print("Hand request by " + remote_uuid)
+    print("Game: " + game_id)
     print([key for key in game.players_by_uuid])
     player = game.players_by_uuid[remote_uuid]
     hand = player.hand
