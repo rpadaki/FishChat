@@ -43,6 +43,7 @@ def add_user():
             player.uuid = remote_uuid
             player.name = values['name']
             game.players_by_uuid[remote_uuid] = player
+            break
     response = {
             'message': 'Player ' + values['name'] + ' added to the game.',
             'player_id': remote_uuid
