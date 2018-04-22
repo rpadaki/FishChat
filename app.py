@@ -61,8 +61,7 @@ def get_hand():
     player = game.players_by_uuid[remote_uuid]
     hand = player.hand
     response = {
-            'hand_suits' : [card.suit for card in hand],
-            'hand_values' : [card.value for card in hand],
+            'hand' : [card.string for card in hand],
             'name' : player.name,
             'player_id': remote_uuid
     }
